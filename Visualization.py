@@ -8,40 +8,22 @@ st.set_page_config(page_title="Road Safety Statistics", page_icon=":chart_with_u
 
 time_series_st = st.sidebar.checkbox("Time Series")
 time_series_select = None
-pie_select = None
-if(time_series_st) :
-   time_series_select = st.sidebar.selectbox("Time series Variable", ['Accidents per year', 'Accident junction probability' ,'Casualty count', 'Accidents probability per day of week' ,'Severity probability'], )
+bar_select = None
+if time_series_st :
+   time_series_select = st.sidebar.selectbox("Time series Variable", ['Accident junction probability' ,'Casualty count', 'Accidents probability per day of week' ,'Severity probability'], )
 
 bar_st = st.sidebar.checkbox("Bar")
 
-if(bar_st) :
-    bar_select = st.sidebar.selectbox("Bar variable", ["Total accidents per year", "Accidents per road type"])
+if bar_st :
+    bar_select = st.sidebar.selectbox("Bar variable", ["Accidents by hour", "Accidents by road type"])
 
 heatmap_st = st.sidebar.checkbox("Severity heatmap")
-
-pie_st = st.sidebar.checkbox("Pie Chart")
-
-if(pie_st):
-   pie_select = st.sidebar.selectbox("Pie chart variable", ["Accidents per weather conditions"])
 # ---------------------------------------------------------------- logic for python -------------------------------------
 
 data = pd.read_csv('./altered_accident_data.csv', low_memory= False)
 
 #---------------------------------------------------------------- line series --------------------------------
 if time_series_select is not None:
-    if time_series_select == "Accidents per year":
-        accident_counts = data['accident_year'].value_counts().reset_index()
-        accident_counts.columns = ['year', 'count']
-        fig = px.line(
-            accident_counts,
-            x='year',
-            y='count',
-            title='Trend of Accidents by Year',
-            labels={'year': 'Year', 'count': 'Count of Accidents'},
-        )
-                # Display the chart
-        st.plotly_chart(fig, use_container_width=True)
-
     if time_series_select == "Accident junction probability":
         sampled_data = data[data.junction_control != 'Data missing or out of range']
         sampled_data.loc[:, 'accident_year'] = pd.to_datetime(sampled_data['accident_year'], format='%Y')
@@ -153,25 +135,23 @@ if heatmap_st:
 
     st.subheader("Severity Ratio Heatmap")
     st.plotly_chart(fig, use_container_width=True)
-#---------------------------------------------------------------- pie charts --------------------------------
-if pie_st is not None:
-    if pie_select == 'Accidents per weather conditions':
-        grouped = data.groupby(['accident_year', 'weather_conditions']).size().reset_index(name='Accident Count')
+#---------------------------------------------------------------- bar charts --------------------------------
 
-        # Calculate percentages within each year
-        grouped['Percentage'] = grouped.groupby('accident_year')['Accident Count'].apply(lambda x: (x / x.sum()) * 100)
-
-        # Create a pie chart using Plotly
-        fig = px.pie(grouped, names='weather_conditions', values='Percentage', color='weather_conditions',
-                    title='Distribution of Weather Conditions',
-                    labels={'weather_conditions': 'Weather Conditions', 'Percentage': 'Percentage (%)'})
-
-        # Show the interactive pie chart
+if bar_select is not None:
+    if bar_select == 'Accidents by hour':
+        data['time'] = pd.to_datetime(data['time'], format='%H:%M').dt.time
+        data['hour'] = data['time'].apply(lambda x: x.hour)
+        grouped_counts = data.groupby('hour')['accident_reference'].count().reset_index(name='count')
+        fig = px.bar(grouped_counts, x='hour', y='count', color='hour',
+             labels={'hour': 'Hour of the Day', 'count': 'Number of Accidents'},
+             title='Total Accident Counts by Hour and Reference')
         st.plotly_chart(fig, use_container_width=True)
 
-
-
-
-
-
-
+    if bar_select == 'Accidents by road type':
+        data = data.dropna(subset=['road_type'])
+        road_type_counts = data.groupby('road_type')['accident_reference'].count().reset_index()
+        # Create a bar chart using Plotly
+        fig = px.bar(road_type_counts, x='road_type', y='accident_reference', labels={'road_type': 'Road Type', 'accident_reference': 'Number of Accidents'},
+                    title='Accident Counts by Road Type')
+        # Display the Plotly chart using st.plotly_chart()
+        st.plotly_chart(fig, use_container_width=True)

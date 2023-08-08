@@ -13,15 +13,34 @@ from sklearn.svm import SVC
 import xgboost as xgb
 from sklearn.metrics import classification_report
 
+st.markdown("""
+<style>
+    .disabled-option {
+        color: gray;
+    }
+</style>
+<script>
+    const selectElement = document.querySelector(".stSelectbox select");
+    
+    selectElement.addEventListener("change", (event) => {
+        const selectedOption = event.target.value;
+        if (selectedOption === "All" || selectedOption === "Gradient Cost Sensitive") {
+            event.target.classList.add("disabled-option");
+        } else {
+            event.target.classList.remove("disabled-option");
+        }
+    });
+</script>
+""", unsafe_allow_html=True)
 
 # Streamlit UI
 st.title('Accident Severity Prediction Application')
 
 st.sidebar.header('Input Features')
 
-list_of_models_file_names = ['gradient_cost_sensitive', 'logistic_default', 'naive_default', 'random_default', 'support_over']
+list_of_models_file_names = ['logistic_default', 'naive_default', 'random_default', 'support_over']
 
-list_of_models = ['All','Gradient Cost Sensitive', 'Logistic Regression', 'Naive Bayes Regression', 'Random Forest', 'SVM']
+list_of_models = ['Logistic Regression', 'Naive Bayes Regression', 'Random Forest', 'SVM']
 
 loaded_model = st.selectbox('Choose Classification Model', list_of_models)
 
@@ -30,11 +49,11 @@ uploaded_model = st.file_uploader('or Upload your own model (Max 200MB)', type=[
 # Load the trained model
 def get_model():
     models = []
-    if list_of_models.index(loaded_model) == 0:
-        for i in range(len(list_of_models_file_names)):
-            models.append(load_model(list_of_models_file_names[i]))
-    else:
-        models = load_model(list_of_models_file_names[list_of_models.index(loaded_model) - 1])
+ #   if list_of_models.index(loaded_model) == 0:
+  #      for i in range(len(list_of_models_file_names)):
+   #         models.append(load_model(list_of_models_file_names[i]))
+   # else:
+    models = load_model(list_of_models_file_names[list_of_models.index(loaded_model)])
     return models
 
                             
